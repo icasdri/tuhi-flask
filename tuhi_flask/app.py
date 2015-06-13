@@ -20,6 +20,8 @@ from flask_restful import Resource, Api
 from tuhi_flask.database import db_session
 
 app = Flask(__name__)
+app.config.from_object('tuhi_flask.default_config')
+app.config.from_envvar('TUHI_FLASK_CONFIG')
 api = Api(app)
 
 class NotesEndpoint(Resource):
