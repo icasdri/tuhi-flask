@@ -22,7 +22,7 @@ from tuhi_flask.app import app
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, primary_key=True)
     username = Column(String, unique=True)
     password_hash = Column(String)
 
@@ -42,7 +42,7 @@ class User(Base):
 class Note(Base):
     __tablename__ = 'notes'
     note_id = Column(CHAR(36), primary_key=True)
-    user = Column(Integer, ForeignKey('users.id'))
+    user = Column(Integer, ForeignKey('users.user_id'))
     title = Column(String)
     deleted = Column(Boolean, default=False)
     date_modified = Column(DateTime)  # May need to use Integer from epoch here
