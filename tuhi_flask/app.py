@@ -16,28 +16,16 @@
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from flask import Flask, request
-from flask_restful import Resource, Api
+from flask import Flask
+from flask_restful import Api
 from tuhi_flask.database import db_session
+from tuhi_flask.controller import NotesEndpoint
 
 app = Flask(__name__)
 app.config.from_object('tuhi_flask.default_config')
 if os.getenv('TUHI_FLASK_CONFIG') is not None:
     app.config.from_envvar('TUHI_FLASK_CONFIG')
 api = Api(app)
-
-class NotesEndpoint(Resource):
-    def get(self):
-        print(request.args)  # Query value will be in here, e.g. ?after=2015-06-14T19:04:43.238851
-        return {'note': [],
-                'note_contents': []}
-
-    def post(self):
-        print("Hi")
-        data = request.get_json(force=True)
-        print(type(data))
-        print(data)
-        print(request.values)
 
 api.add_resource(NotesEndpoint, '/notes')
 
