@@ -35,11 +35,12 @@ class RespondImmediatelyWithReason(Exception):
 
 
 def _check_missing_keys(data, response):
-    missing = {"notes", "note_contents"} - data.keys()
-    if missing == set():
-        return
-    else:
-        response['missing'] = list(missing)
+    missing = []
+    for needed in ("notes", "note_contents"):
+        if needed not in data.keys() or type(data[needed]) is not list:
+            missing.append(needed)
+    if len(missing) != 0:
+        response['missing'] = missing
         raise RespondImmediatelyWithReason("Bad Request")
 
 def _check_ignoring_keys(data, response):
