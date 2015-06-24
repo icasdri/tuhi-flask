@@ -45,7 +45,8 @@ class Note(Base):
     user = Column(Integer, ForeignKey('users.user_id'))
     title = Column(String)
     deleted = Column(Boolean, default=False)
-    date_modified = Column(DateTime)  # May need to use Integer from epoch here
+    date_modified = Column(Integer, index=True)  # Seconds from epoch
+    # date_modified = Column(DateTime)  # May need to use Integer from epoch here
 
 
 class NoteContent(Base):
@@ -53,5 +54,6 @@ class NoteContent(Base):
     note_content_id = Column(CHAR(36), primary_key=True)
     note = Column(CHAR(36), ForeignKey('notes.note_id'))
     data = Column(Text)
-    date_created = Column(DateTime)  # May need to use Integer from epoch here
+    date_created = Column(Integer, index=True)  # Seconds from epoch
+    # date_created = Column(DateTime)  # May need to use Integer from epoch here
 
