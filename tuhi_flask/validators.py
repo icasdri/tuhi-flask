@@ -15,10 +15,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
-MISSING_MESSAGE = "missing"
+from tuhi_flask.response_codes import *
 
 class ValidationError(Exception):
-    pass
+    def __init__(self, code):
+        self.code = code
+
+    def __int__(self):
+        return self.code
 
 class ValidationFailFastError(ValidationError):
     pass
@@ -44,37 +48,46 @@ class Validator:
         for field in fields:
             try:
                 value = target[field]
+                try:
+                    validation_func = getattr(self, "_validate_" + field)
+                except AttributeError:
+                    raise ValidationFatal("No validation method exists for field: {}".format(field))
+
+                try:
+                    validation_func(value)
+                except ValidationFailFastError as vffe:
+                    response[field] = str(vffe)
+                    return response
+                except ValidationError as ve:
+                    response[field] =
+                except Exception:
+                    response[field] = CODE_UNKNOWN
+                    return response
             except ValueError:
-                response[field] = MISSING_MESSAGE
+                response[field] = CODE_MISSING
                 if fail_fast_on_missing:
                     return response
 
-            try:
-                validation_func = getattr(self, "_validate_" + field)
-            except AttributeError:
-                raise ValidationFatal("No validation method exists for field: {}".format(field))
-
-            try:
-                validation_func()
-            except ValidationFailFastError as vffe:
-                response[field] = str(vffe)
-                return response
-            except ValidationError as ve:
-                response[field] = str(ve)
-            except Exception:
-                response[field] = "Unknown error"
-                return response
+        return response
 
 
 class NoteValidator(Validator):
     def _validate_note_id(self, val):
-        pass
+        if type(val) is not str:
+            raise ValidationError(CODE_INCORRECT_TYPE)
+        if len(val) != 36:
+            raise ValidationError(CODE_INVALID_UUID)
 
     def _validate_title(self, val):
-        pass
+        if type(val) is not str:
+            raise ValidationError(CODE_INCORRECT_TYPE)
 
     def _validate_deleted(self, val):
-        pass
+        if type(val) is not bool:
+            raise ValidationError(CODE_INCORRECT_TYPE)
 
     def _validate_date_modified(self, val):
-        pass
+        if type(val) is not int:
+            raise ValidationError(CODE_INCORRECT_TYPE)
+        if not 1433131200 < val < 7258136400:  # June 1, 2015 to Jan. 1, 2200
+            raise ValidationError(CODE_INVALID_DATE)
