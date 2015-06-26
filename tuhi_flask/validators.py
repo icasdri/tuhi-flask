@@ -31,11 +31,23 @@ class ValidationFatal(Exception):
     pass
 
 class Validator:
+    def validate(self, target):
+        # Subclasses should override to actually do something
+        #
+        # Should return tuple (success, response)
+        #   where success if a boolean that is True if all validation on this target passed (False otherwise)
+        #   and where response contains the data payload (can be None if no changes wanted)
+        pass
+
+class ObjectValidator(Validator):
     def _fields(self):
         # Subclasses should override this to enumerate a list of fields
         pass
 
     def validate(self, target, fields=None, fail_fast_on_missing=False):
+        if type(target) is not dict:
+            return False, CODE_INCORRECT_TYPE
+
         if fields is None:
             default_fields = self._fields()
             if default_fields is None:
@@ -46,6 +58,7 @@ class Validator:
         response = {}
 
         for field in fields:
+            error_field = field + "_errors"
             try:
                 value = target[field]
                 try:
@@ -56,22 +69,22 @@ class Validator:
                 try:
                     validation_func(value)
                 except ValidationFailFastError as vffe:
-                    response[field] = int(vffe)
-                    return response
+                    response[error_field] = int(vffe)
+                    return False, response
                 except ValidationError as ve:
-                    response[field] = int(ve)
+                    response[error_field] = int(ve)
                 except Exception:
-                    response[field] = CODE_UNKNOWN
-                    return response
+                    response[error_field] = CODE_UNKNOWN
+                    return False, response
             except ValueError:
                 response[field] = CODE_MISSING
                 if fail_fast_on_missing:
-                    return response
+                    return False, response
 
-        return response
+        return True, None
 
 
-class NoteValidator(Validator):
+class NoteValidator(ObjectValidator):
     def _validate_note_id(self, val):
         if type(val) is not str:
             raise ValidationError(CODE_INCORRECT_TYPE)
