@@ -30,6 +30,22 @@ class ValidationFailFastError(ValidationError):
 class ValidationFatal(Exception):
     pass
 
+
+def _validate_type(val, type_):
+    if type(val) is not type_:
+        raise ValidationError(CODE_INCORRECT_TYPE)
+
+def _validate_uuid(uuid):
+    _validate_type(uuid, str)
+    if len(uuid) != 36:
+        raise ValidationError(CODE_INVALID_UUID)
+
+def _validate_date(val):
+    _validate_type(val, int)
+    if not 1433131200 < val < 7258136400:  # June 1, 2015 to Jan. 1, 2200
+        raise ValidationError(CODE_INVALID_DATE)
+
+
 class Validator:
     def validate(self, target):
         # Subclasses should override to actually do something
@@ -86,31 +102,21 @@ class ObjectValidator(Validator):
 
 class TopLevelValidator(ObjectValidator):
     def _validate_notes(self, val):
-        if type(val) is not list:
-            raise ValidationError(CODE_INCORRECT_TYPE)
+        _validate_type(val, list)
 
     def _validate_note_contents(self, val):
-        if type(val) is not list:
-            raise ValidationError(CODE_INCORRECT_TYPE)
+        _validate_type(val, list)
 
 
 class NoteValidator(ObjectValidator):
-    def _validate_note_id(self, val):
-        if type(val) is not str:
-            raise ValidationError(CODE_INCORRECT_TYPE)
-        if len(val) != 36:
-            raise ValidationError(CODE_INVALID_UUID)
+    def _validate_note_id(self, uuid):
+        _validate_uuid(uuid)
 
     def _validate_title(self, val):
-        if type(val) is not str:
-            raise ValidationError(CODE_INCORRECT_TYPE)
+        _validate_type(val, str)
 
     def _validate_deleted(self, val):
-        if type(val) is not bool:
-            raise ValidationError(CODE_INCORRECT_TYPE)
+        _validate_type(val, bool)
 
-    def _validate_date_modified(self, val):
-        if type(val) is not int:
-            raise ValidationError(CODE_INCORRECT_TYPE)
-        if not 1433131200 < val < 7258136400:  # June 1, 2015 to Jan. 1, 2200
-            raise ValidationError(CODE_INVALID_DATE)
+    def _validate_date_modified(self, date):
+        _validate_date(date)
