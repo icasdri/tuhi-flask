@@ -56,10 +56,10 @@ class Validator:
                 try:
                     validation_func(value)
                 except ValidationFailFastError as vffe:
-                    response[field] = str(vffe)
+                    response[field] = int(vffe)
                     return response
                 except ValidationError as ve:
-                    response[field] =
+                    response[field] = int(ve)
                 except Exception:
                     response[field] = CODE_UNKNOWN
                     return response
