@@ -84,6 +84,16 @@ class ObjectValidator(Validator):
         return True, None
 
 
+class TopLevelValidator(ObjectValidator):
+    def _validate_notes(self, val):
+        if type(val) is not list:
+            raise ValidationError(CODE_INCORRECT_TYPE)
+
+    def _validate_note_contents(self, val):
+        if type(val) is not list:
+            raise ValidationError(CODE_INCORRECT_TYPE)
+
+
 class NoteValidator(ObjectValidator):
     def _validate_note_id(self, val):
         if type(val) is not str:
