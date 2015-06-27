@@ -92,7 +92,7 @@ class ObjectValidator(Validator):
                 except Exception:
                     response[error_field] = CODE_UNKNOWN
                     return False, response
-            except ValueError:
+            except (ValueError, KeyError):
                 response[field] = CODE_MISSING
                 if fail_fast_on_missing:
                     return False, response
@@ -101,6 +101,9 @@ class ObjectValidator(Validator):
 
 
 class TopLevelValidator(ObjectValidator):
+    def _fields(self):
+        return "notes", "note_contents"
+
     def _validate_notes(self, val):
         _validate_type(val, list)
 
@@ -109,6 +112,9 @@ class TopLevelValidator(ObjectValidator):
 
 
 class NoteValidator(ObjectValidator):
+    def _fields(self):
+        return "note_id", "title", "deleted", "date_modified"
+
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
 
@@ -122,6 +128,9 @@ class NoteValidator(ObjectValidator):
         _validate_date(date)
 
 class NoteContentValidator(ObjectValidator):
+    def _fields(self):
+        return "note_content_id", "note", "data", "date_created"
+
     def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
         # TODO: Hit database to check for uuid conflicts

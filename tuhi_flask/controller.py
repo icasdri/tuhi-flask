@@ -17,64 +17,19 @@
 
 from flask import request
 from flask_restful import Resource
-from flask_restful.reqparse import RequestParser
+from tuhi_flask.validators import TopLevelValidator, NoteValidator, NoteContentValidator, ValidationFatal
 from tuhi_flask.database import db_session
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
-RESPONSE_CODE = {
-    "Bad Request": 400,  # HTTP: Bad Request
-    "Conflict": 409,  # HTTP: Conflict
-    "Partial": 202  # HTTP: Accepted
-}
-
-def _uuid_type(value):
-    if type(value) is str and len(value) == 36:
-        return value
-    else:
-        raise TypeError("Invalid UUID")
-
-def _date_type(value):
-    # TODO: Potential to add more sanity checks here
-    return int(value)
-
-# note_parser = RequestParser(bundle_errors=True)
-# note_parser.add_argument("note_id", type=_uuid_type, required=True)
-# note_parser.add_argument("title", type=str, required=True)
-# note_parser.add_argument("deleted", type=bool, required=True)
-# note_parser.add_argument("date_modified", type=_date_type, required=True)
-
-class RespondImmediatelyWithReason(Exception):
-    def __init__(self, reason, keep_response=True):
-        if reason in RESPONSE_CODE:
-            self.response_code = RESPONSE_CODE[reason]
-        else:
-            self.response_code = reason
-        self.keep_response = keep_response
+RESPONSE_BAD_REQUEST = 400  # HTTP: Bad Requeset
+RESPONSE_PARTIAL = 202  # HTTP: Accepted
+RESPONSE_CONFLICT = 409  # HTTP: Conflict
 
 
-def _check_missing_keys(data, response):
-    missing = []
-    for needed in ("notes", "note_contents"):
-        if needed not in data.keys() or type(data[needed]) is not list:
-            missing.append(needed)
-    if len(missing) != 0:
-        response['missing'] = missing
-        raise RespondImmediatelyWithReason("Bad Request")
+top_level_validator = TopLevelValidator()
+note_validator = NoteValidator()
+note_content_validator = NoteContentValidator()
 
-def _check_ignoring_keys(data, response):
-    ignoring = data.keys() - {"notes", "note_contents"}
-    if ignoring == set():
-        return
-    else:
-        response['ignoring'] = list(ignoring)
-
-# TODO: Actual user logic (cannot remain as None), with authentication token
-def _process_note(note_dict, user=None):
-    response = {}
-    uuid = _uuid_type(note_dict[])
-
-def _process_note_content(note_content_dict):
-    pass
 
 class NotesEndpoint(Resource):
     def get(self):
@@ -84,13 +39,29 @@ class NotesEndpoint(Resource):
 
     def post(self):
         data = request.get_json(force=True)
+        notes_error_list = []
+        note_contents_error_list = []
+
+        top_level_passed, top_level_errors = top_level_validator.validate(data)
+        if not top_level_passed:
+            return top_level_errors, RESPONSE_BAD_REQUEST
+
         response = {}
-        try:
-            _check_missing_keys(data, response)
-            _check_ignoring_keys(data, response)
-        except RespondImmediatelyWithReason as riwr:
-            if riwr.keep_response:
-                return response, riwr.response_code
-            else:
-                return "", riwr.response_code
-        return response
+
+        for note in data["notes"]:
+            note_passed, note_errors = note_validator.validate(note)
+            if not note_passed:
+                notes_error_list.append(note_errors)
+
+        for note_content in data["note_contents"]:
+            note_content_passed, note_content_errors = note_content_validator.validate(note_content)
+            if not note_content_passed:
+                note_contents_error_list.append(note_content_errors)
+
+        if len(notes_error_list) > 0:
+            response["notes"] = notes_error_list
+        if len(note_contents_error_list) > 0:
+            response["note_contents"] = note_contents_error_list
+
+        if len(response) > 0:
+            return response, RESPONSE_PARTIAL
