@@ -17,7 +17,7 @@
 
 from flask import request
 from flask_restful import Resource
-from tuhi_flask.validators import TopLevelValidator, NoteValidator, NoteContentValidator, ValidationFatal
+from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, ValidationFatal
 from tuhi_flask.database import db_session
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
@@ -26,9 +26,9 @@ RESPONSE_PARTIAL = 202  # HTTP: Accepted
 RESPONSE_CONFLICT = 409  # HTTP: Conflict
 
 
-top_level_validator = TopLevelValidator()
-note_validator = NoteValidator()
-note_content_validator = NoteContentValidator()
+top_level_processor = TopLevelProcessor()
+note_processor = NoteProcessor()
+note_content_processor = NoteContentProcessor()
 
 
 class NotesEndpoint(Resource):
@@ -42,19 +42,19 @@ class NotesEndpoint(Resource):
         notes_error_list = []
         note_contents_error_list = []
 
-        top_level_passed, top_level_errors = top_level_validator.validate(data)
+        top_level_passed, top_level_errors = top_level_processor.process(data)
         if not top_level_passed:
             return top_level_errors, RESPONSE_BAD_REQUEST
 
         response = {}
 
         for note in data["notes"]:
-            note_passed, note_errors = note_validator.validate(note)
+            note_passed, note_errors = note_processor.process(note)
             if not note_passed:
                 notes_error_list.append(note_errors)
 
         for note_content in data["note_contents"]:
-            note_content_passed, note_content_errors = note_content_validator.validate(note_content)
+            note_content_passed, note_content_errors = note_content_processor.process(note_content)
             if not note_content_passed:
                 note_contents_error_list.append(note_content_errors)
 

@@ -50,6 +50,7 @@ def _validate_date(val):
 
 class Processor:
     def process(self, target):
+        # This method validates the given target and processes it if valid, or returns a error response if not
         # Subclasses should override to actually do something
         #
         # Should return tuple (passed, response)
