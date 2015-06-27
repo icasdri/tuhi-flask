@@ -17,6 +17,8 @@
 
 from flask import request
 from flask_restful import Resource
+from flask_restful.reqparse import RequestParser
+from tuhi_flask.database import db_session
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
 RESPONSE_CODE = {
@@ -24,6 +26,22 @@ RESPONSE_CODE = {
     "Conflict": 409,  # HTTP: Conflict
     "Partial": 202  # HTTP: Accepted
 }
+
+def _uuid_type(value):
+    if type(value) is str and len(value) == 36:
+        return value
+    else:
+        raise TypeError("Invalid UUID")
+
+def _date_type(value):
+    # TODO: Potential to add more sanity checks here
+    return int(value)
+
+# note_parser = RequestParser(bundle_errors=True)
+# note_parser.add_argument("note_id", type=_uuid_type, required=True)
+# note_parser.add_argument("title", type=str, required=True)
+# note_parser.add_argument("deleted", type=bool, required=True)
+# note_parser.add_argument("date_modified", type=_date_type, required=True)
 
 class RespondImmediatelyWithReason(Exception):
     def __init__(self, reason, keep_response=True):
@@ -50,6 +68,13 @@ def _check_ignoring_keys(data, response):
     else:
         response['ignoring'] = list(ignoring)
 
+# TODO: Actual user logic (cannot remain as None), with authentication token
+def _process_note(note_dict, user=None):
+    response = {}
+    uuid = _uuid_type(note_dict[])
+
+def _process_note_content(note_content_dict):
+    pass
 
 class NotesEndpoint(Resource):
     def get(self):
