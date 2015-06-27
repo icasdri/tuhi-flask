@@ -17,6 +17,8 @@
 
 from tuhi_flask.response_codes import *
 
+ERROR_FIELD_SUFFIX = "_errors"
+
 class ValidationError(Exception):
     def __init__(self, code):
         self.code = code
@@ -50,14 +52,19 @@ class Validator:
     def validate(self, target):
         # Subclasses should override to actually do something
         #
-        # Should return tuple (success, response)
-        #   where success if a boolean that is True if all validation on this target passed (False otherwise)
+        # Should return tuple (passed, response)
+        #   where passed is a boolean that is True if all validation on this target passed (False otherwise)
         #   and where response contains the data payload (can be None if no changes wanted)
         pass
 
 class ObjectValidator(Validator):
     def _fields(self):
         # Subclasses should override this to enumerate a list of fields
+        pass
+
+    def _fields_reflected_on_error(self):
+        # Subclasses should override this to enumerate a list of fields that should
+        # be rendered as is on the return response
         pass
 
     def validate(self, target, fields=None, fail_fast_on_missing=False):
@@ -74,7 +81,7 @@ class ObjectValidator(Validator):
         response = {}
 
         for field in fields:
-            error_field = field + "_errors"
+            error_field = field + ERROR_FIELD_SUFFIX
             try:
                 value = target[field]
                 try:
@@ -86,21 +93,30 @@ class ObjectValidator(Validator):
                     validation_func(value)
                 except ValidationFailFastError as vffe:
                     response[error_field] = int(vffe)
-                    return False, response
+                    return self._render(False, response, target)
                 except ValidationError as ve:
                     response[error_field] = int(ve)
                 except Exception:
                     response[error_field] = CODE_UNKNOWN
-                    return False, response
+                    return self._render(False, response, target)
             except (ValueError, KeyError):
                 response[error_field] = CODE_MISSING
                 if fail_fast_on_missing:
-                    return False, response
+                    return self._render(False, response, target)
 
         if len(response) > 0:
-            return False, response
+            return self._render(False, response, target)
         else:
             return True, None
+
+    def _render(self, passed, payload, target):
+        fields_reflected_on_error = self._fields_reflected_on_error()
+        if fields_reflected_on_error is not None:
+            for field in fields_reflected_on_error:
+                error_field = field + ERROR_FIELD_SUFFIX
+                if not (error_field in payload and payload[error_field] == CODE_MISSING):
+                    payload[field] = target[field]
+        return passed, payload
 
 
 class TopLevelValidator(ObjectValidator):
@@ -118,6 +134,9 @@ class NoteValidator(ObjectValidator):
     def _fields(self):
         return "note_id", "title", "deleted", "date_modified"
 
+    def _fields_reflected_on_error(self):
+        return ("note_id",)
+
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
 
@@ -133,6 +152,9 @@ class NoteValidator(ObjectValidator):
 class NoteContentValidator(ObjectValidator):
     def _fields(self):
         return "note_content_id", "note", "data", "date_created"
+
+    def _fields_reflected_on_error(self):
+        return ("note_content_id",)
 
     def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
