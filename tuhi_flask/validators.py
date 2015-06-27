@@ -120,3 +120,18 @@ class NoteValidator(ObjectValidator):
 
     def _validate_date_modified(self, date):
         _validate_date(date)
+
+class NoteContentValidator(ObjectValidator):
+    def _validate_note_content_id(self, uuid):
+        _validate_uuid(uuid)
+        # TODO: Hit database to check for uuid conflicts
+
+    def _validate_note(self, note_id):
+        _validate_uuid(note_id)
+        # TODO: Hit database to see if note actually exists
+
+    def _validate_data(self, data):
+        _validate_type(data, str)
+
+    def _validate_date_created(self, date):
+        _validate_date(date)
