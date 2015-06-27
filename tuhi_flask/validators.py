@@ -48,8 +48,8 @@ def _validate_date(val):
         raise ValidationError(CODE_INVALID_DATE)
 
 
-class Validator:
-    def validate(self, target):
+class Processor:
+    def process(self, target):
         # Subclasses should override to actually do something
         #
         # Should return tuple (passed, response)
@@ -57,7 +57,7 @@ class Validator:
         #   and where response contains the data payload (can be None if no changes wanted)
         pass
 
-class ObjectValidator(Validator):
+class ObjectProcessor(Processor):
     def _fields(self):
         # Subclasses should override this to enumerate a list of fields
         pass
@@ -67,7 +67,7 @@ class ObjectValidator(Validator):
         # be rendered as is on the return response
         pass
 
-    def validate(self, target, fields=None, fail_fast_on_missing=False):
+    def process(self, target, fields=None, fail_fast_on_missing=False):
         if type(target) is not dict:
             return False, CODE_INCORRECT_TYPE
 
@@ -85,7 +85,7 @@ class ObjectValidator(Validator):
             try:
                 value = target[field]
                 try:
-                    validation_func = getattr(self, "_validate_" + field)
+                    validation_func = getattr(self, "_process_" + field)
                 except AttributeError:
                     raise ValidationFatal("No validation method exists for field: {}".format(field))
 
@@ -119,53 +119,53 @@ class ObjectValidator(Validator):
         return passed, payload
 
 
-class TopLevelValidator(ObjectValidator):
+class TopLevelProcessor(ObjectProcessor):
     def _fields(self):
         return "notes", "note_contents"
 
-    def _validate_notes(self, val):
+    def _process_notes(self, val):
         _validate_type(val, list)
 
-    def _validate_note_contents(self, val):
+    def _process_note_contents(self, val):
         _validate_type(val, list)
 
 
-class NoteValidator(ObjectValidator):
+class NoteProcessor(ObjectProcessor):
     def _fields(self):
         return "note_id", "title", "deleted", "date_modified"
 
     def _fields_reflected_on_error(self):
         return ("note_id",)
 
-    def _validate_note_id(self, uuid):
+    def _process_note_id(self, uuid):
         _validate_uuid(uuid)
 
-    def _validate_title(self, val):
+    def _process_title(self, val):
         _validate_type(val, str)
 
-    def _validate_deleted(self, val):
+    def _process_deleted(self, val):
         _validate_type(val, bool)
 
-    def _validate_date_modified(self, date):
+    def _process_date_modified(self, date):
         _validate_date(date)
 
-class NoteContentValidator(ObjectValidator):
+class NoteContentProcessor(ObjectProcessor):
     def _fields(self):
         return "note_content_id", "note", "data", "date_created"
 
     def _fields_reflected_on_error(self):
         return ("note_content_id",)
 
-    def _validate_note_content_id(self, uuid):
+    def _process_note_content_id(self, uuid):
         _validate_uuid(uuid)
         # TODO: Hit database to check for uuid conflicts
 
-    def _validate_note(self, note_id):
+    def _process_note(self, note_id):
         _validate_uuid(note_id)
         # TODO: Hit database to see if note actually exists
 
-    def _validate_data(self, data):
+    def _process_data(self, data):
         _validate_type(data, str)
 
-    def _validate_date_created(self, date):
+    def _process_date_created(self, date):
         _validate_date(date)
