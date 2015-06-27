@@ -85,7 +85,7 @@ class ObjectProcessor(Processor):
             try:
                 value = target[field]
                 try:
-                    validation_func = getattr(self, "_process_" + field)
+                    validation_func = getattr(self, "_validate_" + field)
                 except AttributeError:
                     raise ValidationFatal("No validation method exists for field: {}".format(field))
 
@@ -123,10 +123,10 @@ class TopLevelProcessor(ObjectProcessor):
     def _fields(self):
         return "notes", "note_contents"
 
-    def _process_notes(self, val):
+    def _validate_notes(self, val):
         _validate_type(val, list)
 
-    def _process_note_contents(self, val):
+    def _validate_note_contents(self, val):
         _validate_type(val, list)
 
 
@@ -137,16 +137,16 @@ class NoteProcessor(ObjectProcessor):
     def _fields_reflected_on_error(self):
         return ("note_id",)
 
-    def _process_note_id(self, uuid):
+    def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
 
-    def _process_title(self, val):
+    def _validate_title(self, val):
         _validate_type(val, str)
 
-    def _process_deleted(self, val):
+    def _validate_deleted(self, val):
         _validate_type(val, bool)
 
-    def _process_date_modified(self, date):
+    def _validate_date_modified(self, date):
         _validate_date(date)
 
 class NoteContentProcessor(ObjectProcessor):
@@ -156,16 +156,16 @@ class NoteContentProcessor(ObjectProcessor):
     def _fields_reflected_on_error(self):
         return ("note_content_id",)
 
-    def _process_note_content_id(self, uuid):
+    def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
         # TODO: Hit database to check for uuid conflicts
 
-    def _process_note(self, note_id):
+    def _validate_note(self, note_id):
         _validate_uuid(note_id)
         # TODO: Hit database to see if note actually exists
 
-    def _process_data(self, data):
+    def _validate_data(self, data):
         _validate_type(data, str)
 
-    def _process_date_created(self, date):
+    def _validate_date_created(self, date):
         _validate_date(date)
