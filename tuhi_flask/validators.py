@@ -58,6 +58,10 @@ class Processor:
         pass
 
 class ObjectProcessor(Processor):
+    # Subclasses should define validation methods of the form _validate_<field_name>():
+    # these methods should raise the appropriate ValidationError on validation failures
+    # and optionally return a parsed value of the field to be used by processing logic
+
     def _fields(self):
         # Subclasses should override this to enumerate a list of fields
         pass
@@ -65,6 +69,11 @@ class ObjectProcessor(Processor):
     def _fields_reflected_on_error(self):
         # Subclasses should override this to enumerate a list of fields that should
         # be rendered as is on the return response
+        pass
+
+    def _process_object(self, obj):
+        # Subclasses should override this to take an object in the form of a dict
+        # with parsed field values and process it (creating database entries, etc.)
         pass
 
     def process(self, target, fields=None, fail_fast_on_missing=False):
@@ -90,7 +99,9 @@ class ObjectProcessor(Processor):
                     raise ValidationFatal("No validation method exists for field: {}".format(field))
 
                 try:
-                    validation_func(value)
+                    new_value = validation_func(value)
+                    if new_value is not None:
+                        target[field] = new_value
                 except ValidationFailFastError as vffe:
                     response[error_field] = int(vffe)
                     return self._render(False, response, target)
@@ -107,6 +118,7 @@ class ObjectProcessor(Processor):
         if len(response) > 0:
             return self._render(False, response, target)
         else:
+            self._process_object(target)
             return True, None
 
     def _render(self, passed, payload, target):
@@ -149,6 +161,10 @@ class NoteProcessor(ObjectProcessor):
     def _validate_date_modified(self, date):
         _validate_date(date)
 
+    def _process_object(self, obj):
+        pass
+
+
 class NoteContentProcessor(ObjectProcessor):
     def _fields(self):
         return "note_content_id", "note", "data", "date_created"
@@ -169,3 +185,6 @@ class NoteContentProcessor(ObjectProcessor):
 
     def _validate_date_created(self, date):
         _validate_date(date)
+
+    def _process_object(self, obj):
+        pass
