@@ -93,11 +93,14 @@ class ObjectValidator(Validator):
                     response[error_field] = CODE_UNKNOWN
                     return False, response
             except (ValueError, KeyError):
-                response[field] = CODE_MISSING
+                response[error_field] = CODE_MISSING
                 if fail_fast_on_missing:
                     return False, response
 
-        return True, None
+        if len(response) > 0:
+            return False, response
+        else:
+            return True, None
 
 
 class TopLevelValidator(ObjectValidator):
