@@ -15,12 +15,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
-CODE_UNKNOWN = -1
-CODE_VALID_NOT_PROCESSED = 0
-CODE_IGNORED = 1
+CODE_UNKNOWN = -99
+CODE_BAD_JSON = -2
+
 CODE_MISSING = 11
 CODE_INCORRECT_TYPE = 12
+
 CODE_TOO_LONG = 21
 CODE_INVALID_DATE = 23
 CODE_INVALID_UUID = 31
 CODE_UUID_CONFLICT = 32
+
+CODE_FORBIDDEN = 90
+CODE_USER_NOT_EXIST = 91
+CODE_PASSWORD_INCORRECT = 92
