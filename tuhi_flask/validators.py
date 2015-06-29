@@ -119,8 +119,7 @@ class ObjectProcessor(Processor):
         if len(response) > 0:
             return self._render(False, response, target)
         else:
-            self._process_object(target)
-            return True, None
+            return True, self._process_object(target)
 
     def _render(self, passed, payload, target):
         fields_reflected_on_error = self._fields_reflected_on_error()
@@ -188,4 +187,21 @@ class NoteContentProcessor(ObjectProcessor):
         _validate_date(date)
 
     def _process_object(self, obj):
+        pass
+
+
+class AuthenticationProcessor(ObjectProcessor):
+    def _fields(self):
+        return "username", "password"
+
+    def _validate_username(self, val):
+        _validate_type(val, str)
+        # TODO: Hit database for if user exists -- fail fast
+
+    def _validate_password(self, val):
+        _validate_type(val, str)
+        # TODO: Hit database for if password correct for user
+
+    def _process_object(self, obj):
+        # TODO: Get a User Model object out of this
         pass

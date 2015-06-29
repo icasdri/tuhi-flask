@@ -15,29 +15,52 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
+from functools import wraps
 from flask import request
 from flask_restful import Resource
-from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, ValidationFatal
+from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, \
+    AuthenticationProcessor, ValidationFatal
 from tuhi_flask.database import db_session
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
 RESPONSE_BAD_REQUEST = 400  # HTTP: Bad Requeset
 RESPONSE_PARTIAL = 202  # HTTP: Accepted
 RESPONSE_CONFLICT = 409  # HTTP: Conflict
+RESPONSE_UNAUTHORIZED = 401  # HTTP: Unauthorized
 
 
 top_level_processor = TopLevelProcessor()
 note_processor = NoteProcessor()
 note_content_processor = NoteContentProcessor()
+authentication_processor = AuthenticationProcessor()
 
 
 class NotesEndpoint(Resource):
+    def _get_user(self):
+        passed, result = authentication_processor.process(request.authorization, fail_fast_on_missing=True)
+        if passed:
+            return True, result
+        else:
+            return False, (result, RESPONSE_UNAUTHORIZED)
+
     def get(self):
+        auth_ok, auth_result = self._get_user()
+        if not auth_ok:
+            return auth_result
+        else:
+            user = auth_result
+
         print(request.args)  # Query value will be in here, e.g. ?after=2015-06-14T19:04:43.238851
         return {'notes': [],
                 'note_contents': []}
 
     def post(self):
+        auth_ok, auth_result = self._get_user()
+        if not auth_ok:
+            return auth_result
+        else:
+            user = auth_result
+
         data = request.get_json(force=True)
         notes_error_list = []
         note_contents_error_list = []
