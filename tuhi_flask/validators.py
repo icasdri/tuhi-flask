@@ -15,7 +15,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+
 from tuhi_flask.response_codes import *
+from tuhi_flask.models import *
 
 ERROR_FIELD_SUFFIX = "_errors"
 
@@ -62,6 +65,12 @@ class ObjectProcessor(Processor):
     # Subclasses should define validation methods of the form _validate_<field_name>():
     # these methods should raise the appropriate ValidationError on validation failures
     # and optionally return a parsed value of the field to be used by processing logic
+
+    def __init__(self, **kwargs):
+        # This init function allows a Processor to be instantiated with arguments defining
+        # context, such as a specific user, permission-set, etc.
+        for kw, val in kwargs:
+            setattr(self, kw, val)
 
     def _fields(self):
         # Subclasses should override this to enumerate a list of fields
@@ -196,12 +205,19 @@ class AuthenticationProcessor(ObjectProcessor):
 
     def _validate_username(self, val):
         _validate_type(val, str)
-        # TODO: Hit database for if user exists -- fail fast
+        try:
+            self.user_to_auth = User.query.filter(username=val).one()
+        except NoResultFound:
+            raise ValidationFailFastError(CODE_USER_NOT_EXIST)
+        except MultipleResultsFound:
+            raise ValidationFatal("Non-unique usernames detected in database.")
 
     def _validate_password(self, val):
         _validate_type(val, str)
-        # TODO: Hit database for if password correct for user
+        if self.user_to_auth.check_password(val):
+            return
+        else:
+            raise ValidationFailFastError(CODE_PASSWORD_INCORRECT)
 
     def _process_object(self, obj):
-        # TODO: Get a User Model object out of this
-        pass
+        return self.user_to_auth
