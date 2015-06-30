@@ -87,7 +87,7 @@ class ObjectProcessor(Processor):
         pass
 
     def process(self, target, fields=None, fail_fast_on_missing=False):
-        if type(target) is not dict:
+        if not isinstance(target, dict):
             return False, CODE_INCORRECT_TYPE
 
         if fields is None:
@@ -117,9 +117,10 @@ class ObjectProcessor(Processor):
                     return self._render(False, response, target)
                 except ValidationError as ve:
                     response[error_field] = int(ve)
-                except Exception:
-                    response[error_field] = CODE_UNKNOWN
-                    return self._render(False, response, target)
+                # except Exception as e:
+                #     print(e)
+                #     response[error_field] = CODE_UNKNOWN
+                #     return self._render(False, response, target)
             except (ValueError, KeyError):
                 response[error_field] = CODE_MISSING
                 if fail_fast_on_missing:
