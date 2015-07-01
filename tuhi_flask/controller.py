@@ -16,11 +16,11 @@
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
 from functools import wraps
-from flask import request
+from flask import request, json
 from flask_restful import Resource
+from tuhi_flask.response_codes import *
 from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, \
     AuthenticationProcessor, ValidationFatal
-from tuhi_flask.database import db_session
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
 RESPONSE_BAD_REQUEST = 400  # HTTP: Bad Requeset
@@ -37,11 +37,33 @@ authentication_processor = AuthenticationProcessor()
 
 class NotesEndpoint(Resource):
     def _get_user(self):
-        passed, result = authentication_processor.process(request.authorization, fail_fast_on_missing=True)
+        response = {}
+        passed = False
+        if "Authorization" in request.headers:
+            auth_header = request.headers["Authorization"]
+            if auth_header is not None and auth_header != "":
+                if auth_header.startswith("Basic"):
+                    if request.authorization is not None:
+                        passed, result = authentication_processor.process(request.authorization, fail_fast_on_missing=True)
+                        response["authentication"] = result
+                    else:
+                        response["authentication_errors"] = CODE_BAD_BASIC_AUTH_FORMAT
+                else:
+                    try:
+                        auth_dict = json.loads(auth_header)
+                        passed, result = authentication_processor.process(auth_dict, fail_fast_on_missing=True)
+                        response["authentication"] = result
+                    except:
+                        response["authentication_errors"] = CODE_BAD_JSON
+            else:
+                response["authentication_errors"] = CODE_MISSING
+        else:
+            response["authentication_errors"] = CODE_MISSING
+
         if passed:
             return True, result
         else:
-            return False, (result, RESPONSE_UNAUTHORIZED)
+            return False, (response, RESPONSE_UNAUTHORIZED)
 
     def get(self):
         auth_ok, auth_result = self._get_user()
@@ -88,3 +110,4 @@ class NotesEndpoint(Resource):
 
         if len(response) > 0:
             return response, RESPONSE_PARTIAL
+
