@@ -207,7 +207,7 @@ class AuthenticationProcessor(ObjectProcessor):
     def _validate_username(self, val):
         _validate_type(val, str)
         try:
-            self.user_to_auth = User.query.filter(username=val).one()
+            self.user_to_auth = User.query.filter_by(username=val).one()
         except NoResultFound:
             raise ValidationFailFastError(CODE_USER_NOT_EXIST)
         except MultipleResultsFound:
