@@ -113,15 +113,12 @@ class ObjectProcessor(Processor):
                     new_value = validation_func(value)
                     if new_value is not None:
                         target[field] = new_value
-                except ValidationFailFastError as vffe:
-                    response[error_field] = int(vffe)
-                    if vffe.parallel_insert is not None:
-                        response.update(vffe.parallel_insert)
-                    return self._render(False, response, target)
                 except ValidationError as ve:
                     response[error_field] = int(ve)
                     if ve.parallel_insert is not None:
                         response.update(ve.parallel_insert)
+                    if isinstance(ve, ValidationFailFastError):
+                        return self._render(False, response, target)
                 # except Exception as e:
                 #     print(e)
                 #     response[error_field] = CODE_UNKNOWN
