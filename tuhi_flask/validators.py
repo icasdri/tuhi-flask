@@ -77,7 +77,7 @@ class ObjectProcessor(Processor):
     def __init__(self, **kwargs):
         # This init function allows a Processor to be instantiated with arguments defining
         # context, such as a specific user, permission-set, etc.
-        for kw, val in kwargs:
+        for kw, val in kwargs.items():
             setattr(self, kw, val)
 
     # Subclasses should enumerate a list of fields here
