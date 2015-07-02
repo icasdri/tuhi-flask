@@ -229,7 +229,7 @@ class NoteContentProcessor(ObjectProcessor):
 
 class AuthenticationProcessor(ObjectProcessor):
     _fields = "username", "password"
-    _single_use = True
+    # _single_use = True
 
     def _validate_username(self, val):
         _validate_type(val, str)
