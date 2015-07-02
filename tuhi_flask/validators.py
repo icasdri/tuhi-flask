@@ -22,6 +22,10 @@ from tuhi_flask.models import *
 
 ERROR_FIELD_SUFFIX = "_errors"
 
+class UnsuccessfulProcessing(Exception):
+    def __init__(self, response):
+        self.response = response
+
 class ValidationError(Exception):
     def __init__(self, code, parallel_insert=None):
         self.code = code
@@ -73,31 +77,45 @@ class ObjectProcessor(Processor):
         for kw, val in kwargs:
             setattr(self, kw, val)
 
-    def _fields(self):
-        # Subclasses should override this to enumerate a list of fields
-        pass
+    # Subclasses should enumerate a list of fields here
+    _fields = None
 
-    def _fields_reflected_on_error(self):
-        # Subclasses should override this to enumerate a list of fields that should
-        # be rendered as is on the return response
-        pass
+    # Subclasses should enumerate a list of fields that should
+    # be rendered as is on the return response here
+    _fields_reflected_on_error = None
 
     def _process_object(self, obj):
         # Subclasses should override this to take an object in the form of a dict
         # with parsed field values and process it (creating database entries, etc.)
         pass
 
-    def process(self, target, fields=None, fail_fast_on_missing=False):
+    @staticmethod
+    def _get_strlist_or_default(strlist, default):
+        if strlist is None:
+            strlist = default
+        if isinstance(strlist, str):
+            strlist = (strlist,)
+        return strlist
+
+    def process(self, target, fields=None, fields_reflected_on_error=None, fail_fast_on_missing=False):
         if not isinstance(target, dict):
             return False, CODE_INCORRECT_TYPE
 
+        fields = ObjectProcessor._get_strlist_or_default(fields, self._fields)
         if fields is None:
-            default_fields = self._fields()
-            if default_fields is None:
-                raise ValidationFatal("No fields to validate")
-            else:
-                fields = default_fields
+            raise ValidationFatal("No fields to validate")
 
+        fields_reflected_on_error = ObjectProcessor._get_strlist_or_default(fields_reflected_on_error,
+                                                                            self._fields_reflected_on_error)
+
+        try:
+            self._process_fields(fields, target, fail_fast_on_missing)
+        except UnsuccessfulProcessing as u:
+            return self._render(False, u.response, target, fields_reflected_on_error)
+        else:
+            return True, self._process_object(target)
+
+    def _process_fields(self, fields, target, fail_fast_on_missing):
         response = {}
 
         for field in fields:
@@ -118,34 +136,29 @@ class ObjectProcessor(Processor):
                     if ve.parallel_insert is not None:
                         response.update(ve.parallel_insert)
                     if isinstance(ve, ValidationFailFastError):
-                        return self._render(False, response, target)
-                # except Exception as e:
-                #     print(e)
-                #     response[error_field] = CODE_UNKNOWN
-                #     return self._render(False, response, target)
+                        raise UnsuccessfulProcessing(response)
+                        # except Exception as e:
+                        #     print(e)
+                        #     response[error_field] = CODE_UNKNOWN
+                        #     return self._render(False, response, target)
             except (ValueError, KeyError):
                 response[error_field] = CODE_MISSING
                 if fail_fast_on_missing:
-                    return self._render(False, response, target)
+                    raise UnsuccessfulProcessing(response)
 
         if len(response) > 0:
-            return self._render(False, response, target)
-        else:
-            return True, self._process_object(target)
+            raise UnsuccessfulProcessing(response)
 
-    def _render(self, passed, payload, target):
-        fields_reflected_on_error = self._fields_reflected_on_error()
-        if fields_reflected_on_error is not None:
-            for field in fields_reflected_on_error:
-                error_field = field + ERROR_FIELD_SUFFIX
-                if not (error_field in payload and payload[error_field] == CODE_MISSING):
-                    payload[field] = target[field]
+    def _render(self, passed, payload, target, reflect_fields):
+        for field in reflect_fields:
+            error_field = field + ERROR_FIELD_SUFFIX
+            if not (error_field in payload and payload[error_field] == CODE_MISSING):
+                payload[field] = target[field]
         return passed, payload
 
 
 class TopLevelProcessor(ObjectProcessor):
-    def _fields(self):
-        return "notes", "note_contents"
+    _fields = "notes", "note_contents"
 
     def _validate_notes(self, val):
         _validate_type(val, list)
@@ -155,11 +168,8 @@ class TopLevelProcessor(ObjectProcessor):
 
 
 class NoteProcessor(ObjectProcessor):
-    def _fields(self):
-        return "note_id", "title", "deleted", "date_modified"
-
-    def _fields_reflected_on_error(self):
-        return ("note_id",)
+    _fields = "note_id", "title", "deleted", "date_modified"
+    _fields_reflected_on_error = "note_id"
 
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
@@ -178,11 +188,8 @@ class NoteProcessor(ObjectProcessor):
 
 
 class NoteContentProcessor(ObjectProcessor):
-    def _fields(self):
-        return "note_content_id", "note", "data", "date_created"
-
-    def _fields_reflected_on_error(self):
-        return ("note_content_id",)
+    _fields = "note_content_id", "note", "data", "date_created"
+    _fields_reflected_on_error = "note_content_id"
 
     def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
@@ -203,8 +210,7 @@ class NoteContentProcessor(ObjectProcessor):
 
 
 class AuthenticationProcessor(ObjectProcessor):
-    def _fields(self):
-        return "username", "password"
+    _fields = "username", "password"
 
     def _validate_username(self, val):
         _validate_type(val, str)
