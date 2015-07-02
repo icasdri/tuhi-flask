@@ -121,6 +121,8 @@ class ObjectProcessor(Processor):
 
         fields_reflected_on_error = ObjectProcessor._get_strlist_or_default(fields_reflected_on_error,
                                                                             self._fields_reflected_on_error)
+        if fields_reflected_on_error is None:
+            fields_reflected_on_error = []
 
         self._num_uses += 1
 
