@@ -40,6 +40,9 @@ class ValidationFailFastError(ValidationError):
 class ValidationFatal(Exception):
     pass
 
+class SingleUseViolation(ValidationFatal):
+    pass
+
 
 def _validate_type(val, type_):
     if type(val) is not type_:
@@ -84,6 +87,14 @@ class ObjectProcessor(Processor):
     # be rendered as is on the return response here
     _fields_reflected_on_error = None
 
+    # Subclasses should set to True if one of the _validate functions
+    # alters the global Processor state in an irreversible way or in a way
+    # that does not sufficiently restore the state. This usually occurs
+    # when one validation depends on the output of another
+    _single_use = False
+    # Counter of uses to enforce single-use
+    _num_uses = 0
+
     def _process_object(self, obj):
         # Subclasses should override this to take an object in the form of a dict
         # with parsed field values and process it (creating database entries, etc.)
@@ -98,6 +109,9 @@ class ObjectProcessor(Processor):
         return strlist
 
     def process(self, target, fields=None, fields_reflected_on_error=None, fail_fast_on_missing=False):
+        if self._single_use and self._num_uses > 0:
+            raise SingleUseViolation(self.__class__)
+
         if not isinstance(target, dict):
             return False, CODE_INCORRECT_TYPE
 
@@ -107,6 +121,8 @@ class ObjectProcessor(Processor):
 
         fields_reflected_on_error = ObjectProcessor._get_strlist_or_default(fields_reflected_on_error,
                                                                             self._fields_reflected_on_error)
+
+        self._num_uses += 1
 
         try:
             self._process_fields(fields, target, fail_fast_on_missing)
@@ -211,6 +227,7 @@ class NoteContentProcessor(ObjectProcessor):
 
 class AuthenticationProcessor(ObjectProcessor):
     _fields = "username", "password"
+    _single_use = True
 
     def _validate_username(self, val):
         _validate_type(val, str)
