@@ -23,8 +23,9 @@ from tuhi_flask.models import *
 ERROR_FIELD_SUFFIX = "_errors"
 
 class ValidationError(Exception):
-    def __init__(self, code):
+    def __init__(self, code, parallel_insert=None):
         self.code = code
+        self.parallel_insert = parallel_insert
 
     def __int__(self):
         return self.code
@@ -114,9 +115,13 @@ class ObjectProcessor(Processor):
                         target[field] = new_value
                 except ValidationFailFastError as vffe:
                     response[error_field] = int(vffe)
+                    if vffe.parallel_insert is not None:
+                        response.update(vffe.parallel_insert)
                     return self._render(False, response, target)
                 except ValidationError as ve:
                     response[error_field] = int(ve)
+                    if ve.parallel_insert is not None:
+                        response.update(ve.parallel_insert)
                 # except Exception as e:
                 #     print(e)
                 #     response[error_field] = CODE_UNKNOWN
