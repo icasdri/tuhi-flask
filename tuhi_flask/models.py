@@ -15,15 +15,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
+from flask import current_app as app
 from sqlalchemy import Column, Integer, String, CHAR, Text, Boolean, DateTime, ForeignKey
 from werkzeug.security import generate_password_hash, check_password_hash
 from tuhi_flask.database import Base
-from tuhi_flask.app import app
 
 class User(Base):
     __tablename__ = 'users'
     user_id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True)
+    username = Column(String, unique=True, index=True)
     password_hash = Column(String)
 
     def __init__(self, username, password):
@@ -42,7 +42,7 @@ class User(Base):
 class Note(Base):
     __tablename__ = 'notes'
     note_id = Column(CHAR(36), primary_key=True)
-    user = Column(Integer, ForeignKey('users.user_id'))
+    user = Column(Integer, ForeignKey('users.user_id'), index=True)
     title = Column(String)
     deleted = Column(Boolean, default=False)
     date_modified = Column(Integer, index=True)  # Seconds from epoch
@@ -52,7 +52,7 @@ class Note(Base):
 class NoteContent(Base):
     __tablename__ = 'note_contents'
     note_content_id = Column(CHAR(36), primary_key=True)
-    note = Column(CHAR(36), ForeignKey('notes.note_id'))
+    note = Column(CHAR(36), ForeignKey('notes.note_id'), index=True)
     data = Column(Text)
     date_created = Column(Integer, index=True)  # Seconds from epoch
     # date_created = Column(DateTime)  # May need to use Integer from epoch here
