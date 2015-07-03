@@ -68,7 +68,7 @@ class NotesEndpoint(Resource):
         if not auth_ok:
             return auth_result
         else:
-            user = auth_result
+            user_id = auth_result
 
         print(request.args)  # Query value will be in here, e.g. ?after=2015-06-14T19:04:43.238851
         return {'notes': [],
@@ -79,7 +79,7 @@ class NotesEndpoint(Resource):
         if not auth_ok:
             return auth_result
         else:
-            user = auth_result
+            user_id = auth_result
 
         data = request.get_json(force=True)
         notes_error_list = []
@@ -89,8 +89,8 @@ class NotesEndpoint(Resource):
         if not top_level_passed:
             return top_level_errors, RESPONSE_BAD_REQUEST
 
-        note_processor = NoteProcessor(user=user)
-        note_content_processor = NoteContentProcessor(user=user)
+        note_processor = NoteProcessor(user_id=user_id)
+        note_content_processor = NoteContentProcessor(user_id=user_id)
 
         response = {}
 

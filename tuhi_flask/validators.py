@@ -14,9 +14,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
+from sqlalchemy import exists
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
+from tuhi_flask.database import db_session
 from tuhi_flask.response_codes import *
 from tuhi_flask.models import *
 
@@ -211,11 +213,23 @@ class NoteContentProcessor(ObjectProcessor):
 
     def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
-        # TODO: Hit database to check for uuid conflicts
+        (uuid_conflict, ), = db_session.query(exists().where(NoteContent.note_content_id == uuid))
+        if uuid_conflict:
+            raise ValidationFailFastError(CODE_UUID_CONFLICT)
 
     def _validate_note(self, note_id):
         _validate_uuid(note_id)
-        # TODO: Hit database to see if note actually exists
+        try:
+            note_id, user_id = db_session.query(Note.note_id, Note.user_id).filter(Note.note_id == note_id).one()
+        except NoResultFound:
+            raise ValidationFailFastError(CODE_NOTE_NOT_EXIST)
+        except MultipleResultsFound:
+            raise ValidationFatal("Non-unique note_id detected in database.")
+        else:
+            if user_id == self.user_id:
+                self.note_id = note_id
+            else:
+                raise ValidationFailFastError(CODE_FORBIDDEN)
 
     def _validate_data(self, data):
         _validate_type(data, str)
@@ -248,4 +262,4 @@ class AuthenticationProcessor(ObjectProcessor):
             raise ValidationFailFastError(CODE_PASSWORD_INCORRECT)
 
     def _process_object(self, obj):
-        return self.user_to_auth
+        return self.user_to_auth.user_id
