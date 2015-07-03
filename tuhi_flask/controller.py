@@ -30,8 +30,6 @@ RESPONSE_UNAUTHORIZED = 401  # HTTP: Unauthorized
 
 
 top_level_processor = TopLevelProcessor()
-note_processor = NoteProcessor()
-note_content_processor = NoteContentProcessor()
 authentication_processor = AuthenticationProcessor()
 
 
@@ -90,6 +88,9 @@ class NotesEndpoint(Resource):
         top_level_passed, top_level_errors = top_level_processor.process(data)
         if not top_level_passed:
             return top_level_errors, RESPONSE_BAD_REQUEST
+
+        note_processor = NoteProcessor(user=user)
+        note_content_processor = NoteContentProcessor(user=user)
 
         response = {}
 
