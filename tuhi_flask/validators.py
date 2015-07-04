@@ -221,9 +221,24 @@ class NoteProcessor(ObjectProcessor):
         _validate_date(date)
 
     def _pre_process_object(self, obj):
-        user_id = db_session.query(Note.user_id).filter(Note.note_id == obj["note_id"])
-        if user_id != self.user_id:
-            raise ValidationFailFastError(parallel_insert={"authentication": CODE_FORBIDDEN})
+        try:
+            # note = Note.query.filter_by(note_id=obj["note_id"]).one()
+            # user_id = note.user_id
+            (user_id, ) = db_session.query(Note.user_id).filter(Note.note_id == obj["note_id"]).one()
+        except MultipleResultsFound:
+            raise ValidationFatal("Non-unique note_id detected in database.")
+        except NoResultFound:
+            # Add as new
+            obj["user_id"] = self.user_id
+            note = Note(**obj)
+            db_session.add(note)
+            db_session.commit()
+        else:
+            # Update existing
+            if user_id != self.user_id:
+                raise ValidationFailFastError(parallel_insert={"authentication": CODE_FORBIDDEN})
+            Note.query.filter(Note.note_id == obj["note_id"]).update(obj)
+            db_session.commit()
 
     def _process_object(self, obj):
         pass
