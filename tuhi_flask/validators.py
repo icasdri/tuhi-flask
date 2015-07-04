@@ -279,7 +279,11 @@ class NoteContentProcessor(ObjectProcessor):
         _validate_date(date)
 
     def _process_object(self, obj):
-        pass
+        obj["note_id"] = obj["note"]
+        del obj["note"]
+        note_content = NoteContent(**obj)
+        db_session.add(note_content)
+        db_session.commit()
 
 
 class AuthenticationProcessor(ObjectProcessor):
