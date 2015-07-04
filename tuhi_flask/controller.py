@@ -49,10 +49,11 @@ class NotesEndpoint(Resource):
                 else:
                     try:
                         auth_dict = json.loads(auth_header)
-                        passed, result = authentication_processor.process(auth_dict, fail_fast_on_missing=True)
-                        response["authentication"] = result
                     except:
                         response["authentication_errors"] = CODE_BAD_JSON
+                    else:
+                        passed, result = authentication_processor.process(auth_dict, fail_fast_on_missing=True)
+                        response["authentication"] = result
             else:
                 response["authentication_errors"] = CODE_MISSING
         else:
