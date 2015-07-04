@@ -221,6 +221,9 @@ class NoteProcessor(ObjectProcessor):
         _validate_date(date)
 
     def _pre_process_object(self, obj):
+        # TODO: Somehow move actual UPDATE and INSERT logic into _process_object().
+        # (is difficult because must check for if note exists, and must grab a
+        #  user_id from database, and must be able to raise ValidationError on auth issue)
         try:
             # note = Note.query.filter_by(note_id=obj["note_id"]).one()
             # user_id = note.user_id
