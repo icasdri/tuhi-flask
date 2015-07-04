@@ -29,7 +29,7 @@ class UnsuccessfulProcessing(Exception):
         self.response = response
 
 class ValidationError(Exception):
-    def __init__(self, code, parallel_insert=None):
+    def __init__(self, code=None, parallel_insert=None):
         self.code = code
         self.parallel_insert = parallel_insert
 
@@ -73,7 +73,7 @@ class Processor:
 
 class ObjectProcessor(Processor):
     # Subclasses should define validation methods of the form _validate_<field_name>():
-    # these methods should raise the appropriate ValidationError on validation failures
+    # these methods should raise the appropriate ValidationError with error code on validation failures
     # and optionally return a parsed value of the field to be used by processing logic
 
     def __init__(self, **kwargs):
@@ -100,6 +100,15 @@ class ObjectProcessor(Processor):
     def _process_object(self, obj):
         # Subclasses should override this to take an object in the form of a dict
         # with parsed field values and process it (creating database entries, etc.)
+        # This method must NOT raise a ValidationError.
+        pass
+
+    def _pre_process_object(self, obj):
+        # Subclasses should override this to perform any logic before execution of the
+        # _process_object() method. This method should raise ValidationErrors with
+        # parallel inserts but withoud error codes on preprocess/validation failure.
+        # This method should be used to implement preprocessing/validation that does
+        # not fit well with any one field (e.g. those depending on context, etc.)
         pass
 
     @staticmethod
@@ -169,6 +178,13 @@ class ObjectProcessor(Processor):
         if len(response) > 0:
             raise UnsuccessfulProcessing(response)
 
+        try:
+            self._pre_process_object(target)
+        except ValidationError as ve:
+            if ve.parallel_insert is not None:
+                response.update(ve.parallel_insert)
+            raise UnsuccessfulProcessing(response)
+
     def _render(self, passed, payload, target, reflect_fields):
         for field in reflect_fields:
             error_field = field + ERROR_FIELD_SUFFIX
@@ -188,6 +204,7 @@ class TopLevelProcessor(ObjectProcessor):
 
 
 class NoteProcessor(ObjectProcessor):
+    # This Processor must be instantiated with a context containing 'user_id'
     _fields = "note_id", "title", "deleted", "date_modified"
     _fields_reflected_on_error = "note_id"
 
@@ -203,11 +220,17 @@ class NoteProcessor(ObjectProcessor):
     def _validate_date_modified(self, date):
         _validate_date(date)
 
+    def _pre_process_object(self, obj):
+        user_id = db_session.query(Note.user_id).filter(Note.note_id == obj["note_id"])
+        if user_id != self.user_id:
+            raise ValidationFailFastError(parallel_insert={"authentication": CODE_FORBIDDEN})
+
     def _process_object(self, obj):
         pass
 
 
 class NoteContentProcessor(ObjectProcessor):
+    # This Processor must be instantiated with a context containing 'user_id'
     _fields = "note_content_id", "note", "data", "date_created"
     _fields_reflected_on_error = "note_content_id"
 
@@ -229,7 +252,7 @@ class NoteContentProcessor(ObjectProcessor):
             if user_id == self.user_id:
                 self.note_id = note_id
             else:
-                raise ValidationFailFastError(CODE_FORBIDDEN)
+                raise ValidationFailFastError(CODE_FORBIDDEN, parallel_insert={"authentication": CODE_FORBIDDEN})
 
     def _validate_data(self, data):
         _validate_type(data, str)
