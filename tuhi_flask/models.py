@@ -55,6 +55,3 @@ class NoteContent(Base):
     note_id = Column(CHAR(36), ForeignKey('notes.note_id'), index=True)
     data = Column(Text)
     date_created = Column(Integer, index=True)  # Seconds from epoch
-
-    note = relationship("Note")
-
