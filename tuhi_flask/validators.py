@@ -256,14 +256,14 @@ class NoteContentProcessor(ObjectProcessor):
         _validate_uuid(uuid)
         (uuid_conflict, ), = db_session.query(exists().where(NoteContent.note_content_id == uuid))
         if uuid_conflict:
-            raise ValidationFailFastError(CODE_UUID_CONFLICT)
+            raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
 
     def _validate_note(self, note_id):
         _validate_uuid(note_id)
         try:
             note_id, user_id = db_session.query(Note.note_id, Note.user_id).filter(Note.note_id == note_id).one()
         except NoResultFound:
-            raise ValidationFailFastError(CODE_NOTE_NOT_EXIST)
+            raise ValidationFailFastError(CODE_DOES_NOT_EXIST)
         except MultipleResultsFound:
             raise ValidationFatal("Non-unique note_id detected in database.")
         else:
@@ -295,7 +295,7 @@ class AuthenticationProcessor(ObjectProcessor):
         try:
             self.user_to_auth = User.query.filter_by(username=val).one()
         except NoResultFound:
-            raise ValidationFailFastError(CODE_USER_NOT_EXIST)
+            raise ValidationFailFastError(CODE_DOES_NOT_EXIST)
         except MultipleResultsFound:
             raise ValidationFatal("Non-unique usernames detected in database.")
 
