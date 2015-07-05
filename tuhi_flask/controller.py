@@ -18,6 +18,8 @@
 from functools import wraps
 from flask import request, json
 from flask_restful import Resource
+from tuhi_flask.database import db_session
+from tuhi_flask.models import *
 from tuhi_flask.response_codes import *
 from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, \
     AuthenticationProcessor, ValidationFatal
@@ -64,12 +66,39 @@ class NotesEndpoint(Resource):
         else:
             return False, (response, RESPONSE_UNAUTHORIZED)
 
+    def _query_objects(self, user_id, args):
+        note_query = Note.query.filter(Note.user_id == user_id)
+        note_content_query = NoteContent.query.filter(Note.user_id == user_id)
+
+        if "head" in args and args["head"].lower() == "true":
+            return (note_query.order_by(Note.date_modified.desc()).first(),), \
+                   (note_content_query.order_by(NoteContent.date_created.desc()).first(),)
+        elif "after" in args:
+            try:
+                after = int(args["after"])
+            except ValueError:
+                pass
+            else:
+                return note_query.filter(Note.date_modified > after).all(), \
+                       note_content_query.filter(NoteContent.date_created > after).all()
+
+        return note_query.all(), note_content_query.all()
+
+
     def get(self):
         auth_ok, auth_result = self._get_user()
         if not auth_ok:
             return auth_result
         else:
             user_id = auth_result
+
+        note_objects, note_content_objects = self._query_objects(user_id, request.args)
+
+        for note in note_objects:
+            print(note.title)
+
+        for note_content in note_content_objects:
+            print(note_content.data)
 
         print(request.args)  # Query value will be in here, e.g. ?after=2015-06-14T19:04:43.238851
         return {'notes': [],
