@@ -46,3 +46,12 @@ class Serializer:
 
             response[target] = serialization_func(getattr(model_object, field))
         return response
+
+
+class NoteSerializer(Serializer):
+    _fields = "note_id", "title", "deleted", "date_modified"
+
+
+class NoteContentSerializer(Serializer):
+    _fields = "note_content_id", "note_id", "data", "date_created"
+    _field_mappings = {"note_id": "note"}
