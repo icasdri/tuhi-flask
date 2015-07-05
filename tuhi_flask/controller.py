@@ -21,6 +21,7 @@ from flask_restful import Resource
 from tuhi_flask.database import db_session
 from tuhi_flask.models import *
 from tuhi_flask.response_codes import *
+from tuhi_flask.serializers import NoteSerializer, NoteContentSerializer
 from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, \
     AuthenticationProcessor, ValidationFatal
 
@@ -33,6 +34,9 @@ RESPONSE_UNAUTHORIZED = 401  # HTTP: Unauthorized
 
 top_level_processor = TopLevelProcessor()
 authentication_processor = AuthenticationProcessor()
+
+note_serializer = NoteSerializer()
+note_content_serializer = NoteContentSerializer()
 
 
 class NotesEndpoint(Resource):
@@ -94,15 +98,17 @@ class NotesEndpoint(Resource):
 
         note_objects, note_content_objects = self._query_objects(user_id, request.args)
 
+        serialized_notes = []
+        serialized_note_contents = []
+
         for note in note_objects:
-            print(note.title)
+            serialized_notes.append(note_serializer.serialize(note))
 
         for note_content in note_content_objects:
-            print(note_content.data)
+            serialized_note_contents.append(note_content_serializer.serialize(note_content))
 
-        print(request.args)  # Query value will be in here, e.g. ?after=2015-06-14T19:04:43.238851
-        return {'notes': [],
-                'note_contents': []}
+        return {'notes': serialized_notes,
+                'note_contents': serialized_note_contents}
 
     def post(self):
         auth_ok, auth_result = self._get_user()
