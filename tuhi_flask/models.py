@@ -17,6 +17,7 @@
 
 from flask import current_app as app
 from sqlalchemy import Column, Integer, String, CHAR, Text, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from tuhi_flask.database import Base
 
@@ -46,7 +47,6 @@ class Note(Base):
     title = Column(String)
     deleted = Column(Boolean, default=False)
     date_modified = Column(Integer, index=True)  # Seconds from epoch
-    # date_modified = Column(DateTime)  # May need to use Integer from epoch here
 
 
 class NoteContent(Base):
@@ -55,5 +55,6 @@ class NoteContent(Base):
     note_id = Column(CHAR(36), ForeignKey('notes.note_id'), index=True)
     data = Column(Text)
     date_created = Column(Integer, index=True)  # Seconds from epoch
-    # date_created = Column(DateTime)  # May need to use Integer from epoch here
+
+    note = relationship("Note")
 
