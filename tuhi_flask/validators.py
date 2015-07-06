@@ -139,6 +139,7 @@ class ObjectProcessor(Processor):
 
         try:
             self._process_fields(fields, target, fail_fast_on_missing)
+            self._call_pre_process(target)
         except UnsuccessfulProcessing as u:
             return self._render(False, u.response, target, fields_reflected_on_error)
         else:
@@ -151,11 +152,7 @@ class ObjectProcessor(Processor):
             error_field = field + ERROR_FIELD_SUFFIX
             try:
                 value = target[field]
-                try:
-                    validation_func = getattr(self, "_validate_" + field)
-                except AttributeError:
-                    raise ValidationFatal("No validation method exists for field: {}".format(field))
-
+                validation_func = self._get_validation_func(field)
                 try:
                     new_value = validation_func(value)
                     if new_value is not None:
@@ -166,10 +163,6 @@ class ObjectProcessor(Processor):
                         response.update(ve.parallel_insert)
                     if isinstance(ve, ValidationFailFastError):
                         raise UnsuccessfulProcessing(response)
-                        # except Exception as e:
-                        #     print(e)
-                        #     response[error_field] = CODE_UNKNOWN
-                        #     return self._render(False, response, target)
             except (ValueError, KeyError):
                 response[error_field] = CODE_MISSING
                 if fail_fast_on_missing:
@@ -178,12 +171,17 @@ class ObjectProcessor(Processor):
         if len(response) > 0:
             raise UnsuccessfulProcessing(response)
 
+    def _get_validation_func(self, field):
+        try:
+            return getattr(self, "_validate_" + field)
+        except AttributeError:
+            raise ValidationFatal("No validation method exists for field: {}".format(field))
+
+    def _call_pre_process(self, target):
         try:
             self._pre_process_object(target)
         except ValidationError as ve:
-            if ve.parallel_insert is not None:
-                response.update(ve.parallel_insert)
-            raise UnsuccessfulProcessing(response)
+            raise UnsuccessfulProcessing(ve.parallel_insert)
 
     def _render(self, passed, payload, target, reflect_fields):
         for field in reflect_fields:
