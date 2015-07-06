@@ -19,8 +19,8 @@ from sqlalchemy import exists
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from tuhi_flask.database import db_session
-from tuhi_flask.response_codes import *
-from tuhi_flask.models import *
+from tuhi_flask.response_codes import *  # noqa
+from tuhi_flask.models import User, Note, NoteContent
 
 ERROR_FIELD_SUFFIX = "_errors"
 
@@ -61,7 +61,7 @@ def _validate_date(val):
         raise ValidationError(CODE_INVALID_DATE)
 
 
-class Processor:
+class Processor(object):
     def process(self, target):
         # This method validates the given target and processes it if valid, or returns a error response if not
         # Subclasses should override to actually do something

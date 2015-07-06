@@ -31,6 +31,7 @@ api.add_resource(NotesEndpoint, '/notes')
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
+    del exception
     db_session.remove()
 
 

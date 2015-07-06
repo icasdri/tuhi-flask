@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
-class Serializer:
+class Serializer(object):
     # Subclasses can optionally define serialization methods of the form _serialize_<field_name>():
     # that take a value (taken from the model object) and serialize it into the desired form.
     # Enumerated fields without custom serialization methods will have their literal values from

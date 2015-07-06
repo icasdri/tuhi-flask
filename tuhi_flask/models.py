@@ -16,8 +16,7 @@
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
 from flask import current_app as app
-from sqlalchemy import Column, Integer, String, CHAR, Text, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, CHAR, Text, Boolean, ForeignKey
 from werkzeug.security import generate_password_hash, check_password_hash
 from tuhi_flask.database import Base
 

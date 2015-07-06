@@ -15,15 +15,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import wraps
 from flask import request, json
 from flask_restful import Resource
-from tuhi_flask.database import db_session
-from tuhi_flask.models import *
-from tuhi_flask.response_codes import *
+from tuhi_flask.models import Note, NoteContent
+from tuhi_flask.response_codes import *  # noqa
 from tuhi_flask.serializers import NoteSerializer, NoteContentSerializer
-from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, \
-    AuthenticationProcessor, ValidationFatal
+from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, AuthenticationProcessor
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
 RESPONSE_BAD_REQUEST = 400  # HTTP: Bad Requeset
@@ -55,7 +52,7 @@ class NotesEndpoint(Resource):
                 else:
                     try:
                         auth_dict = json.loads(auth_header)
-                    except:
+                    except ValueError:
                         response["authentication_errors"] = CODE_BAD_JSON
                     else:
                         passed, result = authentication_processor.process(auth_dict, fail_fast_on_missing=True)
@@ -87,7 +84,6 @@ class NotesEndpoint(Resource):
                        note_content_query.filter(NoteContent.date_created > after).all()
 
         return note_query.all(), note_content_query.all()
-
 
     def get(self):
         auth_ok, auth_result = self._get_user()
@@ -121,9 +117,9 @@ class NotesEndpoint(Resource):
         notes_error_list = []
         note_contents_error_list = []
 
-        top_level_passed, top_level_errors = top_level_processor.process(data)
-        if not top_level_passed:
-            return top_level_errors, RESPONSE_BAD_REQUEST
+        passed, errors = top_level_processor.process(data)
+        if not passed:
+            return errors, RESPONSE_BAD_REQUEST
 
         note_processor = NoteProcessor(user_id=user_id)
         note_content_processor = NoteContentProcessor(user_id=user_id)
@@ -131,14 +127,14 @@ class NotesEndpoint(Resource):
         response = {}
 
         for note in data["notes"]:
-            note_passed, note_errors = note_processor.process(note)
-            if not note_passed:
-                notes_error_list.append(note_errors)
+            passed, errors = note_processor.process(note)
+            if not passed:
+                notes_error_list.append(errors)
 
         for note_content in data["note_contents"]:
-            note_content_passed, note_content_errors = note_content_processor.process(note_content)
-            if not note_content_passed:
-                note_contents_error_list.append(note_content_errors)
+            passed, errors = note_content_processor.process(note_content)
+            if not passed:
+                note_contents_error_list.append(errors)
 
         if len(notes_error_list) > 0:
             response["notes"] = notes_error_list
