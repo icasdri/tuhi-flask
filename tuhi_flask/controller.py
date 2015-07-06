@@ -20,7 +20,7 @@ from flask_restful import Resource
 from tuhi_flask.models import Note, NoteContent
 from tuhi_flask.response_codes import *  # noqa
 from tuhi_flask.serializers import NoteSerializer, NoteContentSerializer
-from tuhi_flask.validators import TopLevelProcessor, NoteProcessor, NoteContentProcessor, AuthenticationProcessor
+from tuhi_flask.processors import TopLevelProcessor, NoteProcessor, NoteContentProcessor, AuthenticationProcessor
 
 # For list of guaranteed-supported codes, check http://www.w3.org/Protocols/HTTP/HTRESP.html
 RESPONSE_BAD_REQUEST = 400  # HTTP: Bad Requeset

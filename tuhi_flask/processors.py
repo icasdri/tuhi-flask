@@ -61,17 +61,7 @@ def _validate_date(val):
         raise ValidationError(CODE_INVALID_DATE)
 
 
-class Processor(object):
-    def process(self, target):
-        # This method validates the given target and processes it if valid, or returns a error response if not
-        # Subclasses should override to actually do something
-        #
-        # Should return tuple (passed, response)
-        #   where passed is a boolean that is True if all validation on this target passed (False otherwise)
-        #   and where response contains the data payload (can be None if no changes wanted)
-        pass
-
-class ObjectProcessor(Processor):
+class ObjectProcessor(object):
     # Subclasses should define validation methods of the form _validate_<field_name>():
     # these methods should raise the appropriate ValidationError with error code on validation failures
     # and optionally return a parsed value of the field to be used by processing logic
@@ -120,6 +110,11 @@ class ObjectProcessor(Processor):
         return strlist
 
     def process(self, target, fields=None, fields_reflected_on_error=None, fail_fast_on_missing=False):
+        # This method validates the given target and processes it if valid, or returns a error response if not
+        # This method returns a tuple of the form (passed, response)
+        #   where passed is a boolean that is True if all validation on this target passed (False otherwise)
+        #   and where response contains the data payload (can be None if no changes wanted)
+
         if self._single_use and self._num_uses > 0:
             raise SingleUseViolation(self.__class__)
 
