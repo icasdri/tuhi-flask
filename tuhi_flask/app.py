@@ -36,7 +36,7 @@ def shutdown_session(exception=None):
 
 
 def main(debug=True):
-    app.run(debug)
+    app.run(debug=debug)
 
 if __name__ == '__main__':
     main()
