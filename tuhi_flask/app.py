@@ -35,5 +35,8 @@ def shutdown_session(exception=None):
     db_session.remove()
 
 
+def main(debug=True):
+    app.run(debug)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    main()
