@@ -20,7 +20,7 @@ from tuhi_flask.models import *
 from tuhi_flask.database import init_db
 
 def init():
-    with main_app.context():
+    with main_app.app_context():
         init_db()
         from tuhi_flask.database import db_session
         u = User(username="testuser", password="password")
