@@ -19,9 +19,13 @@ from tuhi_flask.app import app
 from tuhi_flask.models import *
 from tuhi_flask.database import init_db
 
-with app.context():
-    init_db()
-    from tuhi_flask.database import db_session
-    u = User(username="testuser", password="password")
-    db_session.add(u)
-    db_session.commit()
+def init():
+    with app.context():
+        init_db()
+        from tuhi_flask.database import db_session
+        u = User(username="testuser", password="password")
+        db_session.add(u)
+        db_session.commit()
+
+if __name__ == "__main__":
+    init()

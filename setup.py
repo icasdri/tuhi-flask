@@ -38,6 +38,7 @@ setup(
     packages=find_packages(),
     install_requires=['sqlalchemy>=1.0', 'flask-restful>=0.3', 'flask>=0.10'],
     entry_points={
-        'console_scripts': ['tuhi-flask-dev = tuhi_flask.app:main'],
+        'console_scripts': ['tuhi-flask-dev = tuhi_flask.app:main',
+                            'tuhi-flask-init = tuhi_flask.manage:init'],
     }
 )
