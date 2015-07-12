@@ -15,12 +15,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with tuhi-flask.  If not, see <http://www.gnu.org/licenses/>.
 
-from tuhi_flask.app import app
+from tuhi_flask.app import app as main_app
 from tuhi_flask.models import *
 from tuhi_flask.database import init_db
 
 def init():
-    with app.context():
+    with main_app.context():
         init_db()
         from tuhi_flask.database import db_session
         u = User(username="testuser", password="password")
