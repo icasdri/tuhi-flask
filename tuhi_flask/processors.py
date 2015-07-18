@@ -198,14 +198,11 @@ class TopLevelProcessor(ObjectProcessor):
 
 class NoteProcessor(ObjectProcessor):
     # This Processor must be instantiated with a context containing 'user_id'
-    _fields = "note_id", "title", "deleted", "date_modified"
+    _fields = "note_id", "deleted", "date_modified"
     _fields_reflected_on_error = "note_id"
 
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
-
-    def _validate_title(self, val):
-        _validate_type(val, str)
 
     def _validate_deleted(self, val):
         _validate_type(val, bool)
