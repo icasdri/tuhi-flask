@@ -235,6 +235,11 @@ class NoteContentProcessor(ObjectProcessor):
             else:
                 raise ValidationFailFastError(CODE_FORBIDDEN, parallel_insert={"authentication": CODE_FORBIDDEN})
 
+    def _validate_type(self, type_):
+        _validate_type(type_, int)
+        # Actual validation on type field
+        return
+
     def _validate_data(self, data):
         _validate_type(data, str)
 
