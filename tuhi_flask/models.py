@@ -43,8 +43,7 @@ class Note(Base):
     __tablename__ = 'notes'
     note_id = Column(CHAR(36), primary_key=True)
     user_id = Column(Integer, ForeignKey('users.user_id'), index=True)
-    deleted = Column(Boolean, default=False)
-    date_modified = Column(Integer, index=True)  # Seconds from epoch
+    date_created = Column(Integer, index=True)  # Seconds from epoch
 
 
 class NoteContent(Base):

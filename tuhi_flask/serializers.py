@@ -49,7 +49,7 @@ class Serializer(object):
 
 
 class NoteSerializer(Serializer):
-    _fields = "note_id", "title", "deleted", "date_modified"
+    _fields = "note_id", "date_created"
 
 
 class NoteContentSerializer(Serializer):

@@ -72,7 +72,7 @@ class NotesEndpoint(Resource):
         note_content_query = NoteContent.query.filter(Note.user_id == user_id)
 
         if "head" in args and args["head"].lower() == "true":
-            return (note_query.order_by(Note.date_modified.desc()).first(),), \
+            return (note_query.order_by(Note.date_created.desc()).first(),), \
                    (note_content_query.order_by(NoteContent.date_created.desc()).first(),)
         elif "after" in args:
             try:
@@ -80,7 +80,7 @@ class NotesEndpoint(Resource):
             except ValueError:
                 pass
             else:
-                return note_query.filter(Note.date_modified > after).all(), \
+                return note_query.filter(Note.date_created > after).all(), \
                        note_content_query.filter(NoteContent.date_created > after).all()
 
         return note_query.all(), note_content_query.all()

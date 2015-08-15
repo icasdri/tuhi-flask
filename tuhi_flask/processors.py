@@ -204,10 +204,7 @@ class NoteProcessor(ObjectProcessor):
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
 
-    def _validate_deleted(self, val):
-        _validate_type(val, bool)
-
-    def _validate_date_modified(self, date):
+    def _validate_date_created(self, date):
         _validate_date(date)
 
     def _pre_process_object(self, obj):
