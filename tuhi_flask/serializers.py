@@ -53,5 +53,5 @@ class NoteSerializer(Serializer):
 
 
 class NoteContentSerializer(Serializer):
-    _fields = "note_content_id", "note_id", "data", "date_created"
+    _fields = "note_content_id", "note_id", "type", "data", "date_created"
     _field_mappings = {"note_id": "note"}

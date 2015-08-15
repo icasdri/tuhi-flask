@@ -50,5 +50,6 @@ class NoteContent(Base):
     __tablename__ = 'note_contents'
     note_content_id = Column(CHAR(36), primary_key=True)
     note_id = Column(CHAR(36), ForeignKey('notes.note_id'), index=True)
+    type = Column(Integer)
     data = Column(Text)
     date_created = Column(Integer, index=True)  # Seconds from epoch
