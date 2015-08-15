@@ -134,7 +134,6 @@ class ObjectProcessor(object):
 
         try:
             self._process_fields(fields, target, fail_fast_on_missing)
-            self._call_pre_process(target)
         except UnsuccessfulProcessing as u:
             return self._render(False, u.response, target, fields_reflected_on_error)
         else:
@@ -172,12 +171,6 @@ class ObjectProcessor(object):
         except AttributeError:
             raise ValidationFatal("No validation method exists for field: {}".format(field))
 
-    def _call_pre_process(self, target):
-        try:
-            self._pre_process_object(target)
-        except ValidationError as ve:
-            raise UnsuccessfulProcessing(ve.parallel_insert)
-
     def _render(self, passed, payload, target, reflect_fields):
         for field in reflect_fields:
             error_field = field + ERROR_FIELD_SUFFIX
@@ -203,35 +196,18 @@ class NoteProcessor(ObjectProcessor):
 
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
+        (uuid_conflict, ), = db_session.query(exists().where(Note.note_id == uuid))
+        if uuid_conflict:
+            raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
 
     def _validate_date_created(self, date):
         _validate_date(date)
 
-    def _pre_process_object(self, obj):
-        # TODO: Somehow move actual UPDATE and INSERT logic into _process_object().
-        # (is difficult because must check for if note exists, and must grab a
-        #  user_id from database, and must be able to raise ValidationError on auth issue)
-        try:
-            # note = Note.query.filter_by(note_id=obj["note_id"]).one()
-            # user_id = note.user_id
-            (user_id, ) = db_session.query(Note.user_id).filter(Note.note_id == obj["note_id"]).one()
-        except MultipleResultsFound:
-            raise ValidationFatal("Non-unique note_id detected in database.")
-        except NoResultFound:
-            # Add as new
-            obj["user_id"] = self.user_id
-            note = Note(**obj)
-            db_session.add(note)
-            db_session.commit()
-        else:
-            # Update existing
-            if user_id != self.user_id:
-                raise ValidationFailFastError(parallel_insert={"authentication": CODE_FORBIDDEN})
-            Note.query.filter(Note.note_id == obj["note_id"]).update(obj)
-            db_session.commit()
-
     def _process_object(self, obj):
-        pass
+        obj["user_id"] = self.user_id
+        note = Note(**obj)
+        db_session.add(note)
+        db_session.commit()
 
 
 class NoteContentProcessor(ObjectProcessor):
