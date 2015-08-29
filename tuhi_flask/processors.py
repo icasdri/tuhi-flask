@@ -196,9 +196,17 @@ class NoteProcessor(ObjectProcessor):
 
     def _validate_note_id(self, uuid):
         _validate_uuid(uuid)
-        (uuid_conflict, ), = db_session.query(exists().where(Note.note_id == uuid))
-        if uuid_conflict:
-            raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
+        try:
+            (existing_note_owner,) = db_session.query(Note.user_id).filter(Note.note_id == uuid).one()
+        except NoResultFound:
+            # There is no conflict in the db, let validation pass
+            pass
+        else:
+            # There is a conflict in the db
+            if existing_note_owner == self.user_id:
+                raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
+            else:
+                raise ValidationFailFastError(CODE_FORBIDDEN, parallel_insert={"authentication": CODE_FORBIDDEN})
 
     def _validate_date_created(self, date):
         _validate_date(date)
@@ -217,9 +225,18 @@ class NoteContentProcessor(ObjectProcessor):
 
     def _validate_note_content_id(self, uuid):
         _validate_uuid(uuid)
-        (uuid_conflict, ), = db_session.query(exists().where(NoteContent.note_content_id == uuid))
-        if uuid_conflict:
-            raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
+        try:
+            (existing_nc_note_id,) = db_session.query(NoteContent.note_id).filter(NoteContent.note_content_id == uuid).one()
+        except NoResultFound:
+            # There is no conflict in the db, let validation pass
+            pass
+        else:
+            # There is a conflict in the db
+            (existing_nc_owner,) = db_session.query(Note.user_id).filter(Note.note_id == existing_nc_note_id).one()
+            if existing_nc_owner == self.user_id:
+                raise ValidationFailFastError(CODE_ALREADY_EXISTS_CONFLICT)
+            else:
+                raise ValidationFailFastError(CODE_FORBIDDEN, parallel_insert={"authentication": CODE_FORBIDDEN})
 
     def _validate_note(self, note_id):
         _validate_uuid(note_id)
